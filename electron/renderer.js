@@ -286,6 +286,7 @@ function beginVoiceOnboarding() {
     return;
   }
 
+  window.awaitingOnboardingName = true;
   setVoiceOnboardingStatus('ARGUS is speaking. Your microphone will activate after the question.');
   speakOnboardingPrompt('Welcome. I am ARGUS, Artificial Responsive Guidance Utility System. Before we begin, what would you like me to call you?', listenForPreferredName);
 }
@@ -293,7 +294,7 @@ function beginVoiceOnboarding() {
 function listenForPreferredName() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = false;
   recognition.lang = 'en-US';
 
@@ -303,9 +304,13 @@ function listenForPreferredName() {
   };
 
   recognition.onresult = (event) => {
-    const userName = event.results[0][0].transcript.trim().replace(/\s+/g, ' ').slice(0, 50);
+    const latestResult = event.results[event.results.length - 1];
+    if (!latestResult.isFinal) return;
+    const userName = latestResult[0].transcript.trim().replace(/\s+/g, ' ').slice(0, 50);
     if (!userName) return;
 
+    window.awaitingOnboardingName = false;
+    recognition.stop();
     window.setupUserName = userName;
     document.getElementById('name-option-label').textContent = userName;
     setVoiceOnboardingStatus(`Thank you, ${userName}.`);
@@ -317,11 +322,24 @@ function listenForPreferredName() {
 
   recognition.onerror = (event) => {
     const reason = event.error || 'unknown recognition error';
-    setVoiceOnboardingStatus(`I did not catch that (${reason}). Select Listen again, then say your name after the prompt.`);
+    const unrecoverable = ['not-allowed', 'service-not-allowed', 'audio-capture'].includes(reason);
+    if (unrecoverable) {
+      window.awaitingOnboardingName = false;
+      setVoiceOnboardingStatus(`ARGUS cannot listen (${reason}). Check microphone access, then select Listen again.`);
+      return;
+    }
+
+    setVoiceOnboardingStatus(`Still listening. Please say your preferred name when ready. (${reason})`, true);
   };
 
   recognition.onend = () => {
     window.onboardingRecognition = null;
+    if (window.awaitingOnboardingName) {
+      setVoiceOnboardingStatus('Still listening. Please say your preferred name when ready.', true);
+      window.onboardingRestartTimer = setTimeout(listenForPreferredName, 250);
+      return;
+    }
+
     document.querySelector('.voice-onboarding')?.classList.remove('listening');
   };
 
@@ -420,6 +438,8 @@ function setupEventListeners() {
   const retryNameButton = document.getElementById('retry-name-button');
   if (retryNameButton) {
     retryNameButton.addEventListener('click', () => {
+      clearTimeout(window.onboardingRestartTimer);
+      window.awaitingOnboardingName = false;
       window.onboardingRecognition?.stop();
       beginVoiceOnboarding();
     });

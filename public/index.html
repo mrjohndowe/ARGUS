@@ -19,7 +19,29 @@
         <p class="argus-subtitle">Artificial Responsive Guidance Utility System</p>
       </div>
 
-      <div id="name-step" class="setup-step">
+      <div id="audio-step" class="setup-step">
+        <h2>Audio setup</h2>
+        <p class="setup-message">ARGUS is online. Before we begin, let’s make sure I can hear you and you can hear me.</p>
+        <div class="audio-setup" aria-live="polite">
+          <label for="speaker-device">ARGUS speaker</label>
+          <select id="speaker-device" class="setup-input" disabled>
+            <option>Enable microphone to list audio devices</option>
+          </select>
+          <button id="test-speaker-button" type="button" class="setup-button secondary" disabled>Test speaker</button>
+
+          <label for="microphone-device">Your microphone</label>
+          <select id="microphone-device" class="setup-input" disabled>
+            <option>Enable microphone to list audio devices</option>
+          </select>
+          <div class="microphone-meter" aria-label="Microphone input level"><span id="microphone-level"></span></div>
+
+          <p id="audio-setup-status" class="voice-status">Select Enable microphone to begin.</p>
+          <button id="enable-audio-button" type="button" class="setup-button">Enable microphone</button>
+          <button id="continue-audio-button" type="button" class="setup-button" disabled>Continue</button>
+        </div>
+      </div>
+
+      <div id="name-step" class="setup-step hidden">
         <h2>Welcome</h2>
         <p class="setup-message">
           I am ARGUS—Artificial Responsive Guidance Utility System. I will begin

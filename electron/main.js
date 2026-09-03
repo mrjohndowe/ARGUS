@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, clipboard, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -57,7 +57,16 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    const isLocalArgusWindow = webContents.getURL().startsWith('file:');
+    const requestedAudioOnly = permission === 'media'
+      && (!details.mediaTypes || (details.mediaTypes.includes('audio') && !details.mediaTypes.includes('video')));
+    callback(isLocalArgusWindow && requestedAudioOnly);
+  });
+
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

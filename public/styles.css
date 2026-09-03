@@ -148,6 +148,38 @@ body {
   line-height: 1.5;
 }
 
+.audio-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.audio-setup label {
+  color: #e0e0e0;
+  font-weight: 700;
+}
+
+.audio-setup .setup-button {
+  align-self: center;
+}
+
+.microphone-meter {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(26, 26, 46, 0.8);
+}
+
+.microphone-meter span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #63f5b3);
+  transition: width 80ms linear;
+}
+
 .setup-input {
   padding: 15px;
   font-size: 16px;

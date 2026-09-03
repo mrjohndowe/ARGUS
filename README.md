@@ -6,7 +6,7 @@ ARGUS is a personal Windows desktop-assistant prototype built with Electron. It 
 
 ## What works today
 
-- ARGUS speaks immediately on first launch, asks for the preferred name aloud, and listens for the response before presenting the address-style choices: **Sir**, **Madam**, **Your name**, or **Adaptive**.
+- ARGUS speaks immediately on first launch, guides the user through speaker and microphone selection/testing, then asks for the preferred name aloud before presenting the address-style choices: **Sir**, **Madam**, **Your name**, or **Adaptive**.
 - Configuration is saved in Electron's per-user application-data directory, not in the repository.
 - The main interface provides basic conversational responses for greetings, time, date, system status, and help.
 - It can read local system details, including platform, CPU-core count, and memory summary.
@@ -39,7 +39,7 @@ The packaged installer is written to the ignored `release` directory.
 ## Privacy and safety
 
 - The current prototype does not send names, messages, or system information to an AI service or any ARGUS server.
-- Preferences are stored locally in Electron's user-data location as `argus-config.json`.
+- Preferences, including the selected audio-device identifiers, are stored locally in Electron's user-data location as `argus-config.json`.
 - The renderer has Node.js integration disabled and uses a narrow preload bridge for the approved Electron functions.
 - The included Copyrighted.com badge loads its image and provided helper script from Copyrighted.com. Keep that external dependency in mind when reviewing network/privacy behavior.
 - Full AI integration, persistent activity history, and PC automation require explicit permission and audit controls before they should be treated as production-ready features.

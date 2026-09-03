@@ -146,6 +146,118 @@ function supportsSpeechRecognition() {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 }
 
+function setAudioSetupStatus(message) {
+  const status = document.getElementById('audio-setup-status');
+  if (status) status.textContent = message;
+}
+
+function stopAudioSetupStream() {
+  window.audioSetupStream?.getTracks().forEach((track) => track.stop());
+  window.audioSetupStream = null;
+  window.audioSetupContext?.close();
+  window.audioSetupContext = null;
+  if (window.audioMeterFrame) cancelAnimationFrame(window.audioMeterFrame);
+  window.audioMeterFrame = null;
+  const level = document.getElementById('microphone-level');
+  if (level) level.style.width = '0%';
+}
+
+function drawMicrophoneLevel(analyser) {
+  const samples = new Uint8Array(analyser.fftSize);
+  const update = () => {
+    analyser.getByteTimeDomainData(samples);
+    const average = samples.reduce((total, sample) => total + Math.abs(sample - 128), 0) / samples.length;
+    const level = document.getElementById('microphone-level');
+    if (level) level.style.width = `${Math.min(100, Math.round(average * 5))}%`;
+    window.audioMeterFrame = requestAnimationFrame(update);
+  };
+  update();
+}
+
+async function populateAudioDevices() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const speakers = devices.filter((device) => device.kind === 'audiooutput');
+  const microphones = devices.filter((device) => device.kind === 'audioinput');
+  const speakerSelect = document.getElementById('speaker-device');
+  const microphoneSelect = document.getElementById('microphone-device');
+  const previousSpeaker = window.setupAudio?.outputDeviceId || speakerSelect.value;
+  const previousMicrophone = window.setupAudio?.inputDeviceId || microphoneSelect.value;
+
+  const fillSelect = (select, choices, emptyLabel) => {
+    select.replaceChildren();
+    if (!choices.length) {
+      select.add(new Option(emptyLabel, ''));
+      select.disabled = true;
+      return;
+    }
+    choices.forEach((device, index) => select.add(new Option(device.label || `${emptyLabel} ${index + 1}`, device.deviceId)));
+    select.disabled = false;
+  };
+
+  fillSelect(speakerSelect, speakers, 'Speaker');
+  fillSelect(microphoneSelect, microphones, 'Microphone');
+  if ([...speakerSelect.options].some((option) => option.value === previousSpeaker)) speakerSelect.value = previousSpeaker;
+  if ([...microphoneSelect.options].some((option) => option.value === previousMicrophone)) microphoneSelect.value = previousMicrophone;
+  document.getElementById('test-speaker-button').disabled = !speakerSelect.value;
+  return { speakerSelect, microphoneSelect };
+}
+
+async function startMicrophoneTest() {
+  stopAudioSetupStream();
+  const microphoneId = document.getElementById('microphone-device').value;
+  const constraints = { audio: microphoneId ? { deviceId: { exact: microphoneId } } : true };
+  window.audioSetupStream = await navigator.mediaDevices.getUserMedia(constraints);
+  const context = new AudioContext();
+  const analyser = context.createAnalyser();
+  analyser.fftSize = 256;
+  context.createMediaStreamSource(window.audioSetupStream).connect(analyser);
+  window.audioSetupContext = context;
+  drawMicrophoneLevel(analyser);
+  window.setupAudio = {
+    inputDeviceId: window.audioSetupStream.getAudioTracks()[0].getSettings().deviceId || microphoneId,
+    outputDeviceId: document.getElementById('speaker-device').value
+  };
+  setAudioSetupStatus('Microphone connected. Speak normally and confirm that the level meter responds.');
+  document.getElementById('continue-audio-button').disabled = false;
+}
+
+async function enableAudioSetup() {
+  try {
+    setAudioSetupStatus('Requesting microphone access…');
+    await navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()));
+    const { microphoneSelect } = await populateAudioDevices();
+    await startMicrophoneTest();
+    microphoneSelect.addEventListener('change', startMicrophoneTest);
+    document.getElementById('enable-audio-button').hidden = true;
+  } catch (error) {
+    setAudioSetupStatus(`Microphone setup failed: ${error.name || 'unknown error'}. Check that Windows allows ARGUS to use your microphone, then try again.`);
+  }
+}
+
+async function testSelectedSpeaker() {
+  const speakerId = document.getElementById('speaker-device').value;
+  try {
+    const context = new AudioContext();
+    const destination = context.createMediaStreamDestination();
+    const output = new Audio();
+    output.srcObject = destination.stream;
+    if (speakerId && typeof output.setSinkId === 'function') await output.setSinkId(speakerId);
+    const oscillator = context.createOscillator();
+    oscillator.frequency.value = 660;
+    oscillator.connect(destination);
+    await output.play();
+    oscillator.start();
+    setTimeout(() => {
+      oscillator.stop();
+      output.pause();
+      context.close();
+    }, 700);
+    setAudioSetupStatus('Playing an ARGUS audio test through the selected speaker.');
+  } catch (error) {
+    setAudioSetupStatus(`Speaker test failed: ${error.name || 'unknown error'}. Select another output and try again.`);
+  }
+}
+
 function setVoiceOnboardingStatus(message, isListening = false) {
   const status = document.getElementById('voice-name-status');
   const panel = document.querySelector('.voice-onboarding');
@@ -203,8 +315,9 @@ function listenForPreferredName() {
     });
   };
 
-  recognition.onerror = () => {
-    setVoiceOnboardingStatus('I did not catch that. Select Listen again, then say your name after the prompt.');
+  recognition.onerror = (event) => {
+    const reason = event.error || 'unknown recognition error';
+    setVoiceOnboardingStatus(`I did not catch that (${reason}). Select Listen again, then say your name after the prompt.`);
   };
 
   recognition.onend = () => {
@@ -273,7 +386,7 @@ async function initApp() {
   
   if (firstRun) {
     showScreen('setup-screen');
-    setTimeout(beginVoiceOnboarding, 300);
+    setTimeout(() => speakOnboardingPrompt('Welcome. I am ARGUS, Artificial Responsive Guidance Utility System. First, let’s configure your audio devices.'), 300);
   } else {
     const config = await getConfig();
     window.currentConfig = config;
@@ -288,6 +401,22 @@ async function initApp() {
 
 function setupEventListeners() {
   // Setup screen
+  const enableAudioButton = document.getElementById('enable-audio-button');
+  if (enableAudioButton) enableAudioButton.addEventListener('click', enableAudioSetup);
+
+  const testSpeakerButton = document.getElementById('test-speaker-button');
+  if (testSpeakerButton) testSpeakerButton.addEventListener('click', testSelectedSpeaker);
+
+  const continueAudioButton = document.getElementById('continue-audio-button');
+  if (continueAudioButton) {
+    continueAudioButton.addEventListener('click', () => {
+      window.setupAudio.outputDeviceId = document.getElementById('speaker-device').value;
+      stopAudioSetupStream();
+      document.getElementById('audio-step').classList.add('hidden');
+      document.getElementById('name-step').classList.remove('hidden');
+      beginVoiceOnboarding();
+    });
+  }
   const retryNameButton = document.getElementById('retry-name-button');
   if (retryNameButton) {
     retryNameButton.addEventListener('click', () => {
@@ -313,6 +442,7 @@ function setupEventListeners() {
       const config = {
         userName: window.setupUserName,
         addressStyle: addressStyle,
+        audio: window.setupAudio,
         completedSetup: true,
         settings: {
           voiceEnabled: true,

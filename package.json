@@ -1,0 +1,41 @@
+{
+  "name": "argus-assistant",
+  "version": "1.0.0",
+  "description": "ARGUS - Artificial Responsive Guidance Utility System",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "electron-build": "electron-builder"
+  },
+  "keywords": [
+    "assistant",
+    "ai",
+    "voice",
+    "productivity"
+  ],
+  "author": "Mr John Dowe",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.argus.assistant",
+    "productName": "ARGUS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "public/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "allowScripts": {
+    "electron@28.3.3": true
+  }
+}

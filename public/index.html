@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="ARGUS - Artificial Responsive Guidance Utility System" />
+  <title>ARGUS - Artificial Responsive Guidance Utility System</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://static.copyrighted.com/badges/helper.js"></script>
+</head>
+<body>
+  <!-- Setup Screen -->
+  <div id="setup-screen" class="screen">
+    <div class="setup-container">
+      <div class="argus-logo">
+        <div class="argus-eye"></div>
+        <h1 class="argus-title">ARGUS</h1>
+        <p class="argus-subtitle">Artificial Responsive Guidance Utility System</p>
+      </div>
+
+      <div id="name-step" class="setup-step">
+        <h2>Welcome</h2>
+        <p class="setup-message">
+          Before we begin, how would you like me to address you?
+        </p>
+        <form id="name-form" class="setup-form">
+          <input
+            type="text"
+            id="user-name"
+            placeholder="Enter your name"
+            class="setup-input"
+            autofocus
+          />
+          <button type="submit" class="setup-button">
+            Continue
+          </button>
+        </form>
+      </div>
+
+      <div id="address-step" class="setup-step hidden">
+        <h2>Address Preference</h2>
+        <p class="setup-message">
+          How should I address you?
+        </p>
+        <form id="address-form" class="setup-form">
+          <div class="address-options">
+            <label class="address-option">
+              <input
+                type="radio"
+                name="address-style"
+                value="Sir"
+                checked
+              />
+              <span>Sir</span>
+            </label>
+            <label class="address-option">
+              <input
+                type="radio"
+                name="address-style"
+                value="Madam"
+              />
+              <span>Madam</span>
+            </label>
+            <label class="address-option">
+              <input
+                type="radio"
+                name="address-style"
+                value="name"
+              />
+              <span id="name-option-label">Your Name</span>
+            </label>
+            <label class="address-option">
+              <input
+                type="radio"
+                name="address-style"
+                value="adaptive"
+              />
+              <span>Adaptive</span>
+            </label>
+          </div>
+          <div class="setup-buttons">
+            <button
+              type="button"
+              id="back-button"
+              class="setup-button secondary"
+            >
+              Back
+            </button>
+            <button type="submit" class="setup-button">
+              Complete Setup
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="copyrighted-footer">
+        <a 
+          class="copyrighted-badge" 
+          title="Copyrighted.com Registered & Protected" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          href="https://app.copyrighted.com/work/98bRRD4qOrcNoPYU/"
+        >
+          <img 
+            alt="Copyrighted.com Registered & Protected" 
+            border="0" 
+            width="125" 
+            height="75"
+            srcSet="https://static.copyrighted.com/badges/125x75/06_2x.png 2x"
+            src="https://static.copyrighted.com/badges/125x75/06.png"
+          />
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Interface -->
+  <div id="main-interface" class="screen">
+    <div class="interface-header">
+      <div class="header-left">
+        <div class="argus-icon">◉</div>
+        <h1>ARGUS</h1>
+      </div>
+      <div class="header-right">
+        <button 
+          id="activity-button"
+          class="header-button"
+          title="Activity Log"
+        >
+          📋
+        </button>
+        <button 
+          id="settings-button"
+          class="header-button"
+          title="Settings"
+        >
+          ⚙️
+        </button>
+      </div>
+    </div>
+
+    <div class="interface-content">
+      <div id="messages" class="messages-container"></div>
+
+      <div class="input-container">
+        <button
+          id="voice-button"
+          class="voice-button"
+          title="Voice Input"
+        >
+          🎤
+        </button>
+        <textarea
+          id="message-input"
+          class="message-input"
+          placeholder="Type your message or use voice input..."
+          rows="2"
+        ></textarea>
+        <button
+          id="send-button"
+          class="send-button"
+          title="Send Message"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+      <div class="modal-content">
+        <h2>Settings</h2>
+        <div class="settings-content">
+          <label class="setting-item">
+            <input
+              type="checkbox"
+              id="voice-enabled"
+            />
+            <span>Voice Enabled</span>
+          </label>
+          <label class="setting-item">
+            <input
+              type="checkbox"
+              id="auto-speak"
+            />
+            <span>Auto-Speak Responses</span>
+          </label>
+          <div class="setting-item">
+            <label>Response Length:</label>
+            <select id="response-length">
+              <option value="short">Short</option>
+              <option value="medium">Medium</option>
+              <option value="long">Long</option>
+            </select>
+          </div>
+        </div>
+        <button class="modal-close">Close</button>
+      </div>
+    </div>
+
+    <!-- Activity Log Modal -->
+    <div id="activity-modal" class="modal">
+      <div class="modal-content activity-modal">
+        <h2>Activity Log</h2>
+        <div id="activity-log-content" class="activity-log"></div>
+        <button class="modal-close">Close</button>
+      </div>
+    </div>
+
+    <div class="copyrighted-footer">
+      <a 
+        class="copyrighted-badge" 
+        title="Copyrighted.com Registered & Protected" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        href="https://app.copyrighted.com/work/98bRRD4qOrcNoPYU/"
+      >
+        <img 
+          alt="Copyrighted.com Registered & Protected" 
+          border="0" 
+          width="125" 
+          height="75"
+          srcSet="https://static.copyrighted.com/badges/125x75/06_2x.png 2x"
+          src="https://static.copyrighted.com/badges/125x75/06.png"
+        />
+      </a>
+    </div>
+  </div>
+
+  <script src="electron/renderer.js"></script>
+</body>
+</html>

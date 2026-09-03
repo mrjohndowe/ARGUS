@@ -11,6 +11,7 @@ ARGUS is a personal Windows desktop-assistant prototype built with Electron. It 
 - The main interface provides basic conversational responses for greetings, time, date, system status, and help.
 - It can read local system details, including platform, CPU-core count, and memory summary.
 - A settings panel controls voice enabled, automatic spoken replies, and response-length preference.
+- Built-in speech prefers an installed natural/neural British English voice where Windows provides one, with an even, human-paced ARGUS delivery profile. It is an original assistant style, not an exact impersonation of a performer.
 - A local activity log records commands processed during the open app session.
 - The Copyrighted.com registration badge appears in both the first-run and primary-interface footers.
 

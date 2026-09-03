@@ -136,10 +136,37 @@ function updateActivityLogDisplay() {
 function speakResponse(text) {
   if (window.currentConfig?.settings?.voiceEnabled && 'speechSynthesis' in window) {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 0.9;
+    configureArgusVoice(utterance);
     speechSynthesis.speak(utterance);
   }
+}
+
+function getArgusVoice() {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const preferredNames = ['ryan', 'george', 'oliver', 'daniel', 'james', 'guy'];
+  return voices
+    .map((voice) => {
+      const name = voice.name.toLowerCase();
+      const language = voice.lang.toLowerCase();
+      let score = 0;
+      if (language === 'en-gb' || language.startsWith('en-gb-')) score += 100;
+      if (name.includes('natural') || name.includes('neural')) score += 55;
+      if (preferredNames.some((preferredName) => name.includes(preferredName))) score += 35;
+      if (name.includes('microsoft')) score += 10;
+      if (language.startsWith('en')) score += 5;
+      return { voice, score };
+    })
+    .sort((a, b) => b.score - a.score)[0].voice;
+}
+
+function configureArgusVoice(utterance) {
+  const voice = getArgusVoice();
+  if (voice) utterance.voice = voice;
+  utterance.rate = 0.91;
+  utterance.pitch = 0.92;
+  utterance.volume = 1;
 }
 
 function supportsSpeechRecognition() {
@@ -273,8 +300,7 @@ function speakOnboardingPrompt(text, onComplete) {
 
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.9;
-  utterance.pitch = 0.9;
+  configureArgusVoice(utterance);
   utterance.onend = () => onComplete?.();
   utterance.onerror = () => onComplete?.();
   speechSynthesis.speak(utterance);
@@ -632,3 +658,7 @@ function toggleVoiceInput() {
 
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', initApp);
+
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = () => getArgusVoice();
+}

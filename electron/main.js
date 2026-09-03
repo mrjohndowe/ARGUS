@@ -42,14 +42,15 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
       preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, '../public/icon.png')
   });
 
-  mainWindow.loadFile('public/index.html');
+  mainWindow.loadFile(path.join(__dirname, '../public/index.html'));
 
   mainWindow.on('closed', () => {
     mainWindow = null;

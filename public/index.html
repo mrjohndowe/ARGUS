@@ -11,7 +11,7 @@
 </head>
 <body>
   <!-- Setup Screen -->
-  <div id="setup-screen" class="screen">
+  <div id="setup-screen" class="screen setup-screen">
     <div class="setup-container">
       <div class="argus-logo">
         <div class="argus-eye"></div>
@@ -22,20 +22,15 @@
       <div id="name-step" class="setup-step">
         <h2>Welcome</h2>
         <p class="setup-message">
-          Before we begin, how would you like me to address you?
+          I am ARGUS—Artificial Responsive Guidance Utility System. I will begin
+          by asking how you would like to be addressed.
         </p>
-        <form id="name-form" class="setup-form">
-          <input
-            type="text"
-            id="user-name"
-            placeholder="Enter your name"
-            class="setup-input"
-            autofocus
-          />
-          <button type="submit" class="setup-button">
-            Continue
-          </button>
-        </form>
+        <div class="voice-onboarding" aria-live="polite">
+          <div class="voice-indicator" aria-hidden="true">◉</div>
+          <p id="voice-name-status" class="voice-status">ARGUS is preparing to listen.</p>
+          <p class="voice-hint">Speak your name after ARGUS asks. You can ask ARGUS to listen again if needed.</p>
+          <button id="retry-name-button" type="button" class="setup-button secondary">Listen again</button>
+        </div>
       </div>
 
       <div id="address-step" class="setup-step hidden">
@@ -116,7 +111,7 @@
   </div>
 
   <!-- Main Interface -->
-  <div id="main-interface" class="screen">
+  <div id="main-interface" class="screen main-interface">
     <div class="interface-header">
       <div class="header-left">
         <div class="argus-icon">◉</div>
@@ -228,6 +223,6 @@
     </div>
   </div>
 
-  <script src="electron/renderer.js"></script>
+  <script src="../electron/renderer.js"></script>
 </body>
 </html>

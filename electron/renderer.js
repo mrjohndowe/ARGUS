@@ -115,21 +115,107 @@ function updateActivityLogDisplay() {
   activityLog.forEach(entry => {
     const entryDiv = document.createElement('div');
     entryDiv.className = 'activity-entry';
-    entryDiv.innerHTML = `
-      <span class="activity-type">${entry.type}:</span>
-      <span class="activity-action">${entry.action}</span>
-      <span class="activity-time">${new Date(entry.timestamp).toLocaleTimeString()}</span>
-    `;
+
+    const type = document.createElement('span');
+    type.className = 'activity-type';
+    type.textContent = `${entry.type}:`;
+
+    const action = document.createElement('span');
+    action.className = 'activity-action';
+    action.textContent = entry.action;
+
+    const time = document.createElement('span');
+    time.className = 'activity-time';
+    time.textContent = new Date(entry.timestamp).toLocaleTimeString();
+
+    entryDiv.append(type, action, time);
     activityLogContainer.appendChild(entryDiv);
   });
 }
 
 function speakResponse(text) {
-  if ('speechSynthesis' in window) {
+  if (window.currentConfig?.settings?.voiceEnabled && 'speechSynthesis' in window) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 0.9;
     speechSynthesis.speak(utterance);
+  }
+}
+
+function supportsSpeechRecognition() {
+  return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+}
+
+function setVoiceOnboardingStatus(message, isListening = false) {
+  const status = document.getElementById('voice-name-status');
+  const panel = document.querySelector('.voice-onboarding');
+  if (status) status.textContent = message;
+  panel?.classList.toggle('listening', isListening);
+}
+
+function speakOnboardingPrompt(text, onComplete) {
+  if (!('speechSynthesis' in window)) {
+    onComplete?.();
+    return;
+  }
+
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.9;
+  utterance.pitch = 0.9;
+  utterance.onend = () => onComplete?.();
+  utterance.onerror = () => onComplete?.();
+  speechSynthesis.speak(utterance);
+}
+
+function beginVoiceOnboarding() {
+  if (!supportsSpeechRecognition()) {
+    setVoiceOnboardingStatus('Voice recognition is unavailable on this PC. Install or enable a supported speech-recognition service, then select Listen again.');
+    return;
+  }
+
+  setVoiceOnboardingStatus('ARGUS is speaking. Your microphone will activate after the question.');
+  speakOnboardingPrompt('Welcome. I am ARGUS, Artificial Responsive Guidance Utility System. Before we begin, what would you like me to call you?', listenForPreferredName);
+}
+
+function listenForPreferredName() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    window.onboardingRecognition = recognition;
+    setVoiceOnboardingStatus('Listening for your preferred name…', true);
+  };
+
+  recognition.onresult = (event) => {
+    const userName = event.results[0][0].transcript.trim().replace(/\s+/g, ' ').slice(0, 50);
+    if (!userName) return;
+
+    window.setupUserName = userName;
+    document.getElementById('name-option-label').textContent = userName;
+    setVoiceOnboardingStatus(`Thank you, ${userName}.`);
+    speakOnboardingPrompt(`Thank you, ${userName}. How should I address you? Choose Sir, Madam, your name, or Adaptive.`, () => {
+      document.getElementById('address-step').classList.remove('hidden');
+      document.getElementById('name-step').classList.add('hidden');
+    });
+  };
+
+  recognition.onerror = () => {
+    setVoiceOnboardingStatus('I did not catch that. Select Listen again, then say your name after the prompt.');
+  };
+
+  recognition.onend = () => {
+    window.onboardingRecognition = null;
+    document.querySelector('.voice-onboarding')?.classList.remove('listening');
+  };
+
+  try {
+    recognition.start();
+  } catch {
+    setVoiceOnboardingStatus('ARGUS is already listening. Please say your name.');
   }
 }
 
@@ -187,10 +273,12 @@ async function initApp() {
   
   if (firstRun) {
     showScreen('setup-screen');
+    setTimeout(beginVoiceOnboarding, 300);
   } else {
     const config = await getConfig();
     window.currentConfig = config;
     showScreen('main-interface');
+    syncSettingsControls(config);
     addMessage('system', 'Configuration complete. ARGUS is online and standing by.');
   }
   
@@ -200,17 +288,11 @@ async function initApp() {
 
 function setupEventListeners() {
   // Setup screen
-  const nameForm = document.getElementById('name-form');
-  if (nameForm) {
-    nameForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const userName = document.getElementById('user-name').value.trim();
-      if (userName) {
-        window.setupUserName = userName;
-        document.getElementById('name-option-label').textContent = userName;
-        document.getElementById('address-step').classList.remove('hidden');
-        document.getElementById('name-step').classList.add('hidden');
-      }
+  const retryNameButton = document.getElementById('retry-name-button');
+  if (retryNameButton) {
+    retryNameButton.addEventListener('click', () => {
+      window.onboardingRecognition?.stop();
+      beginVoiceOnboarding();
     });
   }
   
@@ -275,6 +357,7 @@ function setupEventListeners() {
   if (settingsButton) {
     settingsButton.addEventListener('click', () => {
       document.getElementById('settings-modal').classList.add('active');
+      syncSettingsControls(window.currentConfig);
     });
   }
   
@@ -328,6 +411,15 @@ function setupEventListeners() {
   }
 }
 
+function syncSettingsControls(config) {
+  const settings = config?.settings;
+  if (!settings) return;
+
+  document.getElementById('voice-enabled').checked = Boolean(settings.voiceEnabled);
+  document.getElementById('auto-speak').checked = Boolean(settings.autoSpeak);
+  document.getElementById('response-length').value = settings.responseLength || 'medium';
+}
+
 function sendMessage() {
   const input = document.getElementById('message-input');
   const text = input.value.trim();
@@ -352,6 +444,7 @@ function toggleVoiceInput() {
       recognition.lang = 'en-US';
 
       recognition.onstart = () => {
+        window.activeRecognition = recognition;
         window.isListening = true;
         voiceButton.classList.add('listening');
       };
@@ -361,12 +454,14 @@ function toggleVoiceInput() {
         document.getElementById('message-input').value = transcript;
         window.isListening = false;
         voiceButton.classList.remove('listening');
+        window.activeRecognition = null;
       };
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         window.isListening = false;
         voiceButton.classList.remove('listening');
+        window.activeRecognition = null;
       };
 
       recognition.onend = () => {
@@ -379,6 +474,7 @@ function toggleVoiceInput() {
       alert('Speech recognition is not supported in this browser.');
     }
   } else {
+    window.activeRecognition?.stop();
     window.isListening = false;
     voiceButton.classList.remove('listening');
   }
